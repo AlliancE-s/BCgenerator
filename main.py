@@ -1,3 +1,5 @@
+import linecache
+
 import cv2
 from PIL import ImageFont, ImageDraw, Image
 import numpy as np
@@ -57,7 +59,7 @@ def get_offset(num):
     return offset1, offset2
 
 
-def writelabel(text, point, end):
+def writelabel(text, point, end=0):
     if end == 0:
         with open("BC_output/Label.txt", "a", encoding='utf-8') as file:
             file.write(
@@ -82,24 +84,25 @@ def writelabel(text, point, end):
 #     file.write('')
 # with open("BC_output/fileState.txt", "w") as file:
 #     file.write('')
-
+# with open("BC_output/record.txt", "w") as file:
+#     file.write('')
 # 生成图片数量
-num_pic = 50
+num_pic = 1000
 
 for i in range(num_pic):
 
     # 图片控件
-    typeCode = 10  # 用于不同背景的调整
+    typeCode = 22   # 用于不同背景的调整
     bk_img = cv2.imread("backgroud/back" + str(typeCode) + ".jpg")
-    offset = get_offset(10)
-    temp_filename = str(i + 1 + (typeCode - 1) * 50)
+    offset = get_offset(0)
+    temp_filename = str(i + 1 + (typeCode - 11) * num_pic)
 
     # 读取并初始化
     img_pil = Image.fromarray(bk_img)
     draw = ImageDraw.Draw(img_pil)
 
     # 保存文件名，四位数
-    filename = temp_filename.zfill(4)
+    filename = temp_filename.zfill(8)
 
     # 随机生成字体样式
     default_font_path = "STHeiti Medium.ttc"
@@ -390,6 +393,49 @@ for i in range(num_pic):
         p_draw = [608, 542]
 
         draw_and_write(font, card, p_draw, offset, type, end)
+
+    if typeCode > 10 and typeCode <= 22:
+        line_num = random.randint(1, 12000)
+        card_num_temp = linecache.getline('bank_number.txt', line_num)
+
+        card_type = random.choice([16,18])
+        if card_type == 18:
+            write_num =card_num_temp[:-2]
+            card1 = card_num_temp[0:6]
+            card2 = card_num_temp[6:18]
+            card_num = f"{card1} {card2}"  # 四个空格
+        else:
+            write_num = card_num_temp[:-4]
+            card1 = card_num_temp[0:4]
+            card2 = card_num_temp[4:8]
+            card3 = card_num_temp[8:12]
+            card4 = card_num_temp[12:16]
+            card_num = f"{card1}  {card2}  {card3}  {card4}"
+
+        color_list = ['white','black', 'blue', 'red', 'green', (192, 192, 192)]
+        if typeCode == 11: color_list = ['white', 'blue', 'red', 'green', (192, 192, 192)]
+        if typeCode == 15: color_list = ['black', 'blue', 'red', 'green', (192, 192, 192)]
+        if typeCode == 17: color_list = ['white', 'blue', 'red', 'green', (192, 192, 192)]
+        if typeCode == 20: color_list = ['white', 'blue', 'red', 'green', 'black']
+        if typeCode == 22: color_list = ['white', (192, 192, 192), 'red', 'green', 'black']
+        set_color = random.choice(color_list)
+
+        font_path = "Farrington-7B.ttf"
+        font = ImageFont.truetype(font_path, 62)
+
+        p_draw = [5, 5]
+
+        content = str(card_num)
+        font_size = draw.textsize(content, font=font)
+        movement = [font_size[1], font_size[0], 8]
+
+        draw.text((p_draw[0] + offset[0], p_draw[1] + offset[1]), content, font=font, fill=set_color)
+        point_all = get_four_point(p_draw[0], p_draw[1], movement, offset)
+        writelabel(write_num, point_all)
+
+        with open("BC_output/record.txt", "a", encoding='utf-8') as file:
+            file.write(
+                filename + '.jpg\t' + write_num + '\n')
 
     # 不知道这行干啥的，留着
     bk_img = np.array(img_pil)
